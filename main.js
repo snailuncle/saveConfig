@@ -91,9 +91,9 @@ ViewIdListRegisterListener.prototype.setState('input3', '这个是三号输入�
 
 // 单独获取某个控件的状态
 // 获取单选按钮1 的状态
-let radio1State = ViewIdListRegisterListener.prototype.getState('switch1')
+let radio1State = ViewIdListRegisterListener.prototype.getState('radio1')
 // 获取输入框1 的文本内容
-let input1State = ViewIdListRegisterListener.prototype.getState('seekbar')
+let input1State = ViewIdListRegisterListener.prototype.getState('input1')
 
 let info = {
   radio1State: radio1State,
