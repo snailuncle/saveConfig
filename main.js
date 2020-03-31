@@ -1,11 +1,17 @@
 "ui";
-/**
- * 作者: 家
- * QQ: 203118908
- * 功能: 保存界面配置, 单独设置控件状态, 获取单选按钮组的选中按钮的id
- * 版本号: 1.0.1
+
+/*
+ * @Description: 保存界面配置, 单独设置控件状态, 获取单选按钮组的选中按钮的id
+ * @Version: 2.0
+ * @author: 家
+ * @QQ: 203118908
+ * @bilibili: 晓宇小凡
+ * @Date: 2020-02-23 00:31:07
+ * @LastEditors: 家
+ * @LastEditTime: 2020-03-31 23:14:31
  */
-importClass(android.text.TextWatcher)
+
+
 
 let ViewIdListRegisterListener = require('./ViewIdListRegisterListener')
 
@@ -15,9 +21,9 @@ ui.layout(
   <vertical margin='20'>
     <text textSize='25sp' textStyle='bold' gravity='center' textColor='#ff00ff' > 功能: 保存界面配置</text>
     <vertical>
-      <input id='input1' w="*" h="{{viewHeight}}" />
-      <input id='input2' w="*" h="{{viewHeight}}" />
-      <input id='input3' w="*" h="{{viewHeight}}" />
+      <input id='input1' w="*" h="{{viewHeight}}" tag="EditText" />
+      <input id='input2' w="*" h="{{viewHeight}}" tag="EditText" />
+      <input id='input3' w="*" h="{{viewHeight}}" tag="EditText" />
     </vertical>
     <radiogroup id='fbName'>
       <horizontal>
@@ -77,7 +83,7 @@ let 需要备份和还原的控件id列表集合 = [
   ['seekbar']
 ]
 需要备份和还原的控件id列表集合.map((viewIdList) => {
-  let inputViewIdListRegisterListener = new ViewIdListRegisterListener(viewIdList, storage)
+  let inputViewIdListRegisterListener = new ViewIdListRegisterListener(viewIdList, storage, ui)
   inputViewIdListRegisterListener.registerlistener()
   inputViewIdListRegisterListener.restore()
 })
@@ -85,15 +91,17 @@ let 需要备份和还原的控件id列表集合 = [
 
 // 单独设置某个控件的状态
 // 设置单选按钮3 为选中状态
-ViewIdListRegisterListener.prototype.setState('radio3', true)
+setTimeout(function () {
+  ViewIdListRegisterListener.prototype.setState('radio3', true, ui, ['radio1', 'radio2', 'radio3', 'radio4', 'radio5'])
+}, 2000)
 // 设置输入框3 的文本内容
-ViewIdListRegisterListener.prototype.setState('input3', '这个是三号输入框')
+ViewIdListRegisterListener.prototype.setState('input3', '这个是三号输入框', ui)
 
 // 单独获取某个控件的状态
 // 获取单选按钮1 的状态
-let radio1State = ViewIdListRegisterListener.prototype.getState('radio1')
+let radio1State = ViewIdListRegisterListener.prototype.getState('radio1', ui)
 // 获取输入框1 的文本内容
-let input1State = ViewIdListRegisterListener.prototype.getState('input1')
+let input1State = ViewIdListRegisterListener.prototype.getState('input1', ui)
 
 let info = {
   radio1State: radio1State,
@@ -105,6 +113,6 @@ log(info)
 
 // 获取单选按钮组中, 选中状态的单选按钮id
 
-let radioId = ViewIdListRegisterListener.prototype.getStateOfRadioGroup(['radio1', 'radio2', 'radio3', 'radio4', 'radio5'])
+let radioId = ViewIdListRegisterListener.prototype.getStateOfRadioGroup(['radio1', 'radio2', 'radio3', 'radio4', 'radio5'], ui)
 log('单选按钮被勾选了: ' + radioId)
 

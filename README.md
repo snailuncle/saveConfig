@@ -17,6 +17,6 @@
  * @method getState - 获取控件状态
  * @method getStateOfRadioGroup - 获取单选按钮组中, 选中状态的单选按钮id
  */
-function ViewIdListRegisterListener (viewIdList, storage) {}
+function ViewIdListRegisterListener (viewIdList, storage, viewParent) {}
 
 ```

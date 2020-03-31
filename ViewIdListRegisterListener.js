@@ -15,36 +15,43 @@
  * @method getState - 获取控件状态
  * @method getStateOfRadioGroup - 获取单选按钮组中, 选中状态的单选按钮id
  */
-function ViewIdListRegisterListener (viewIdList, storage) {
+
+ 
+importClass(android.text.TextWatcher)
+
+function ViewIdListRegisterListener (viewIdList, storage, viewParent) {
   let viewIdListType = getObjType(viewIdList)
-  if (('Array' !== viewIdListType) || viewIdList.length < 1) {
+  if (('Array' !== viewIdListType) || viewIdList.length < 1 || !viewParent) {
     throw new Error('请传入数组, 且至少一个控件id')
   }
   if (!storage) {
     throw new Error('请传入storage')
   }
+  if (!viewParent) {
+    throw new Error('请传入viewParent')
+  }
   this.viewIdList = viewIdList
   this.storage = storage
+  this.viewParent = viewParent;
   let that = this
   this.listenerFunction = {
     EditText: function (viewId) {
       var myTextWatcher = new TextWatcher({
         onTextChanged: function (CharSequence, start, before, count) {
-          log(CharSequence)
           that.storage.put(viewId, CharSequence.toString())
         }
       });
-      ui[viewId].addTextChangedListener(myTextWatcher)
+      that.viewParent[viewId].addTextChangedListener(myTextWatcher)
     },
     RadioButton: function (viewId) {
-      var view = ui[viewId]
+      var view = that.viewParent[viewId]
       view.setOnClickListener(
         function () {
           if (view.isChecked()) {
             that.storage.put(viewId, true)
             that.viewIdList.map((item) => {
               if (viewId !== item) {
-                ui[item].setChecked(false)
+                that.viewParent[item].setChecked(false)
                 that.storage.put(item, false)
               }
             })
@@ -53,19 +60,19 @@ function ViewIdListRegisterListener (viewIdList, storage) {
       )
     },
     CheckBox: function (viewId) {
-      let view = ui[viewId]
+      let view = that.viewParent[viewId]
       view.on('check', function (checked) {
         that.storage.put(viewId, checked)
       })
     },
     Switch: function (viewId) {
-      let view = ui[viewId]
+      let view = that.viewParent[viewId]
       view.on('check', function (checked) {
         that.storage.put(viewId, checked)
       })
     },
     SeekBar: function (viewId) {
-      let view = ui[viewId]
+      let view = that.viewParent[viewId]
       var seekbarListener = new android.widget.SeekBar.OnSeekBarChangeListener({
         onProgressChanged: function (v, progress, fromUser) {
           that.storage.put(viewId, progress)
@@ -74,7 +81,7 @@ function ViewIdListRegisterListener (viewIdList, storage) {
       view.setOnSeekBarChangeListener(seekbarListener);
     },
     Spinner: function (viewId) {
-      let view = ui[viewId]
+      let view = that.viewParent[viewId]
       var myAdapterListener = new android.widget.AdapterView.OnItemSelectedListener({
         onItemSelected: function (parent, view, position, id) {
           that.storage.put(viewId, id)
@@ -87,99 +94,111 @@ function ViewIdListRegisterListener (viewIdList, storage) {
     EditText: function () {
       that.viewIdList.map((viewId) => {
         let value = that.storage.get(viewId) || ''
-        ui[viewId].setText(value)
+        that.viewParent[viewId].setText(value)
       })
     },
     RadioButton: function () {
       that.viewIdList.map((viewId) => {
         let value = that.storage.get(viewId) || false
-        ui[viewId].checked = value
+        that.viewParent[viewId].checked = value
       })
     },
     CheckBox: function () {
       that.viewIdList.map((viewId) => {
         let value = that.storage.get(viewId) || false
-        ui[viewId].checked = value
+        that.viewParent[viewId].checked = value
       })
     },
     Switch: function () {
       that.viewIdList.map((viewId) => {
         let value = that.storage.get(viewId) || false
-        ui[viewId].checked = value
+        that.viewParent[viewId].checked = value
       })
     },
     SeekBar: function () {
       that.viewIdList.map((viewId) => {
         let value = that.storage.get(viewId) || 0
-        ui[viewId].setProgress(value);
+        that.viewParent[viewId].setProgress(value);
       })
     },
     Spinner: function () {
       that.viewIdList.map((viewId) => {
         let value = that.storage.get(viewId) || 0
-        ui[viewId].setSelection(value);
+        that.viewParent[viewId].setSelection(value);
       })
     },
   }
 
 }
 
-ViewIdListRegisterListener.prototype.getStateOfRadioGroup = function (radioIdList) {
-  function getViewType (view) {
-    let result = view.accessibilityClassName
-    result = result.replace('android.widget.', '')
-    return result
+function getViewType (view) {
+  if (view.getTag && view.getTag()) {
+    let viewType = view.getTag()
+    if (["EditText", "RadioButton", "CheckBox", "Switch", "SeekBar", "Spinner"].indexOf(viewType) !== -1) {
+      return view.getTag()
+    }
   }
+  let result = view.accessibilityClassName
+  result = result.replace('android.widget.', '')
+  return result
+}
+ViewIdListRegisterListener.prototype.getStateOfRadioGroup = function (radioIdList, viewParent) {
+  this.viewParent = viewParent
   var len = radioIdList.length
   for (var i = 0; i < len; i++) {
     let radioId = radioIdList[i]
-    let viewType = getViewType(ui[radioId])
+    let viewType = getViewType(viewParent[radioId])
     if (viewType !== 'RadioButton') {
       throw new Error('该控件不是单选按钮: ' + radioId)
     }
-    if (ui[radioId].checked) {
+    if (viewParent[radioId].checked) {
       return radioId
     }
   }
 }
 ViewIdListRegisterListener.prototype.setStateFunction = {
-  EditText: function (viewId, value) {
-    ui[viewId].setText(value)
+  EditText: function (viewId, value, viewParent) {
+    viewParent[viewId].setText(value)
   },
-  RadioButton: function (viewId, value) {
-    ui[viewId].checked = value
+  RadioButton: function (viewId, value, viewParent, radioIdList) {
+    if (!value) { return true }
+    var len = radioIdList.length
+    for (var i = 0; i < len; i++) {
+      viewParent[radioIdList[i]].checked = false
+    }
+    viewParent[viewId].checked = value
   },
-  CheckBox: function (viewId, value) {
-    ui[viewId].checked = value
+  CheckBox: function (viewId, value, viewParent) {
+    viewParent[viewId].checked = value
   },
-  Switch: function (viewId, value) {
-    ui[viewId].checked = value
+  Switch: function (viewId, value, viewParent) {
+    viewParent[viewId].checked = value
   },
-  SeekBar: function (viewId, value) {
-    ui[viewId].setProgress(value);
+  SeekBar: function (viewId, value, viewParent) {
+    viewParent[viewId].setProgress(value);
   },
-  Spinner: function (viewId, value) {
-    ui[viewId].setSelection(value);
+  Spinner: function (viewId, value, viewParent) {
+    viewParent[viewId].setSelection(value);
   },
 }
 ViewIdListRegisterListener.prototype.getStateFunction = {
-  EditText: function (viewId) {
-    return ui[viewId].text()
+  EditText: function (viewId, viewParent) {
+    return viewParent[viewId].text()
   },
-  RadioButton: function (viewId) {
-    return ui[viewId].checked
+  RadioButton: function (viewId, viewParent) {
+    return viewParent[viewId].checked
   },
-  CheckBox: function (viewId) {
-    return ui[viewId].checked
+  CheckBox: function (viewId, viewParent) {
+    return viewParent[viewId].checked
   },
-  Switch: function (viewId) {
-    return ui[viewId].checked
+  Switch: function (viewId, viewParent) {
+    return viewParent[viewId].checked
   },
-  SeekBar: function (viewId) {
-    return ui[viewId].getProgress()
+  SeekBar: function (viewId, viewParent) {
+    return viewParent[viewId].getProgress()
   },
-  Spinner: function (viewId) {
-    return ui[viewId].setSelection()
+  Spinner: function (viewId, viewParent) {
+    return viewParent[viewId].setSelection()
   },
 }
 
@@ -196,24 +215,19 @@ ViewIdListRegisterListener.prototype.getViewType = function () {
   // android.widget.RelativeLayout 相对布局
   // android.widget.RelativeLayout 相对布局
   // android.support.v7.widget.RecyclerView 通常也是列表控件
-  function getViewType (view) {
-    let result = view.accessibilityClassName
-    result = result.replace('android.widget.', '')
-    return result
-  }
   var len = this.viewIdList.length
   if (len === 1) {
-    let view = ui[this.viewIdList[0]]
+    let view = this.viewParent[this.viewIdList[0]]
     return this.viewType = getViewType(view)
   }
   let viewType = false;
   for (var i = 0; i < len; i++) {
     if (!viewType) {
-      let view = ui[this.viewIdList[0]]
+      let view = this.viewParent[this.viewIdList[0]]
       viewType = getViewType(view)
       continue
     }
-    let view = ui[this.viewIdList[i]]
+    let view = this.viewParent[this.viewIdList[i]]
     let viewType2 = getViewType(view)
     if (viewType !== viewType2) {
       throw new Error('请传入相同类型的控件id')
@@ -242,29 +256,22 @@ ViewIdListRegisterListener.prototype.restore = function () {
     this.restoreFunction[viewType](viewId)
   })
 }
-ViewIdListRegisterListener.prototype.setState = function (viewId, value) {
-  function getViewType (view) {
-    let result = view.accessibilityClassName
-    result = result.replace('android.widget.', '')
-    return result
-  }
-  let viewType = getViewType(ui[viewId])
+ViewIdListRegisterListener.prototype.setState = function (viewId, value, viewParent, viewIdList) {
+  this.viewParent = viewParent;
+
+  let viewType = getViewType(this.viewParent[viewId])
   if (!(this.setStateFunction[viewType])) {
     throw new Error('没有添加该类型的控件设置状态函数: ' + viewType)
   }
-  this.setStateFunction[viewType](viewId, value)
+  this.setStateFunction[viewType](viewId, value, viewParent, viewIdList)
 }
-ViewIdListRegisterListener.prototype.getState = function (viewId) {
-  function getViewType (view) {
-    let result = view.accessibilityClassName
-    result = result.replace('android.widget.', '')
-    return result
-  }
-  let viewType = getViewType(ui[viewId])
+ViewIdListRegisterListener.prototype.getState = function (viewId, viewParent) {
+  this.viewParent = viewParent
+  let viewType = getViewType(this.viewParent[viewId])
   if (!(this.getStateFunction[viewType])) {
     throw new Error('没有添加该类型的控件获取状态函数: ' + viewType)
   }
-  return this.getStateFunction[viewType](viewId)
+  return this.getStateFunction[viewType](viewId, viewParent)
 }
 
 
