@@ -1,5 +1,11 @@
 # saveConfig
 
+version: 1.0.3
+更新内容:
+1. 添加`FileStorage`模块, 用于卸载app后, 依然留存界面配置信息
+2. `function ViewIdListRegisterListener(viewIdList, storage, viewParent, isFileStorage)`  
+   增加参数`isFileStorage`, 可不填, 如果填了, 就重新定义局部的storage
+
 ```
 
 /**
